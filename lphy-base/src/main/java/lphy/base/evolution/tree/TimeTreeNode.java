@@ -9,6 +9,8 @@ import java.util.*;
  */
 public class TimeTreeNode {
 
+    private double weight;
+
     private ArrayList<TimeTreeNode> children = new ArrayList<>();
     private TimeTreeNode parent = null;
     private int index;
@@ -58,6 +60,13 @@ public class TimeTreeNode {
             copy.addChild(child.deepCopy(tree));
         }
         return copy;
+    }
+
+    public final double getWeight() {
+        return weight;
+    }
+    public void setWeight(double newWeight) {
+        this.weight = newWeight;
     }
 
     public boolean isRoot() {

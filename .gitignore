@@ -14,6 +14,9 @@ manuscript/**/*.pyg
 manuscript/manuscript_diff*.tex
 *.iml
 
+.idea/
+lphy-base/gradle/
+
 # output files
 *.log
 *.nexus
@@ -22,6 +25,7 @@ manuscript/manuscript_diff*.tex
 # build files
 .gradle
 **/build/**
+**/out/**
 
 # macOS Files
 **/.DS_Store
