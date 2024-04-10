@@ -107,6 +107,9 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
         //------------------------------------------------------------------------------------------------------------------------------
         while ((activeLeft.size() + activeRight.size() + leavesToBeAdded.size()) > 1) {
 
+            //System.out.println(" ");
+            //System.out.println("activeLeft = " + activeLeft + "  activeRight = " + activeRight);
+
             // update totalPairCount
             int activeNodesCount = activeLeft.size() + activeRight.size();
             if (activeNodesCount >= 2) {
@@ -133,6 +136,8 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
                 validPairCountRight = 0;
             }
 
+            //System.out.println("validPairCountLeft = " + validPairCountLeft + "  validPairCountRight = " + validPairCountRight);
+
             // update validPairCount
             if (canCreateC == false) {
                 validPairCount = validPairCountLeft + validPairCountRight;
@@ -143,39 +148,49 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
             // if there's only 1 active node left, cannot coalesce. Go to the next sampling time
             if (activeNodesCount == 1) {
                 time = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
-            } else { // can coalesce, draw next time;
-                double rate = (activeNodesCount * (activeNodesCount - 1.0)) / (popSize * 2.0);
-                double x = -Math.log(random.nextDouble()) / rate;
-                time += x;
+                //System.out.println("Only 1 active node left, cannot coalesce. Go to the next sampling time =" + time);
+            } else { // there are more than 1 active node, can coalesce
 
-                // if time too large, go to next sampling time
-                if (leavesToBeAdded.size() > 0 && time > leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge()) {
-                    time = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
-                } else { // do coalescence
+                // if there is valid pair, draw time
+                if (validPairCount != 0) {
+                    double rate = (activeNodesCount * (activeNodesCount - 1.0)) / (popSize * 2.0);
+                    double x = -Math.log(random.nextDouble()) / rate;
+                    time += x;
+                    //System.out.println("can coalesce, draw next time = " + time);
 
-                    if (validPairCount != 0) { // there is valid pair, coalescent happen (3 cases)
-
+                    // if time too large, go to next sampling time
+                    if (leavesToBeAdded.size() > 0 && time > leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge()) {
+                        time = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
+                        //System.out.println("time too large, go to next sampling time = " + time);
+                    }
+                    else {
                         // At least one group has >= 2 active lineages that can coalesce
                         if (canCreateC == false) {
                             int randomNum = random.nextInt(validPairCount);
                             if (randomNum < validPairCountLeft) { // left pair coalescence
                                 coalescentEvent(activeLeft, time);
+                                //System.out.println("there is valid pair, coalesce left");
                             } else { // right
                                 coalescentEvent(activeRight, time);
+                                //System.out.println("there is valid pair, coalesce right");
                             }
+                            //System.out.println("totalWeight *= " + validPairCount + " / " + totalPairCount);
                             totalWeight *= (double) validPairCount / totalPairCount;
                         } else { // canCreateC == true
                             coalescentEvent(activeLeft, activeRight, activeLeft, time);
                         }
-
-                    } else { // no valid pair, go to next sampling time
-                        // the probability that no coalescent before next sample, exp( -tau * (k choose 2) / theta )
-                        double nextTime = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
-                        double tau = nextTime - time;
-                        double noCoalescentProb = Math.exp(-tau * ((double) totalPairCount / theta.value().doubleValue()));
-                        totalWeight *= noCoalescentProb;
-                        time = nextTime;
                     }
+                }
+                else { // no valid pari, go to next time, p_nc
+                    // the probability that no coalescent before next sample, exp( -tau * (k choose 2) / theta )
+                    double nextTime = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
+                    double tau = nextTime - time;
+                    double noCoalescentProb = Math.exp(-tau * ((double) totalPairCount / theta.value().doubleValue()));
+                    //System.out.println("no valid pair, go to next sampling time = " + nextTime);
+                    //System.out.println("current time = " + time + "    tau = " + tau);
+                    //System.out.println("totalWeight *= e^ (" + (-tau) + " * " + totalPairCount + " / " + theta.value().doubleValue());
+                    totalWeight *= noCoalescentProb;
+                    time = nextTime;
                 }
             }
 
@@ -223,19 +238,19 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
         Value<Number> theta = new Value<>("theta", 1);
 
         Taxon A = new Taxon("A");
-        Taxon B = new Taxon("B");
+        Taxon B = new Taxon("B", 0.5);
         Taxon C = new Taxon("C", 1);
-        Taxon D = new Taxon("D", 1);
 
-        Value<Taxa> taxa = new Value<>("taxa", new Taxa.Simple(new Taxon[]{A, B, C, D}));
+        Value<Taxa> taxa = new Value<>("taxa", new Taxa.Simple(new Taxon[]{A, B, C}));
         Value<Integer> n = new Value<>("n", taxa.value().ntaxa());
-        Value<Taxa> leftClade = new Value<>("taxa", new Taxa.Simple(new Taxon[]{A, B, C}));
-        Value<Taxa> rightClade = new Value<>("taxa", new Taxa.Simple(new Taxon[]{D}));
+        Value<Taxa> leftClade = new Value<>("taxa", new Taxa.Simple(new Taxon[]{A, C}));
+        Value<Taxa> rightClade = new Value<>("taxa", new Taxa.Simple(new Taxon[]{B}));
 
-        int reps = 100000;
+        int reps = 100;
         double[] weights = new double[reps];
 
         for (int i = 0; i < reps; i++) {
+            //System.out.println(" ");
             SerialCoalClade coalescent = new SerialCoalClade(theta, n, taxa, null, leftClade, rightClade);
             RandomVariable<TimeTree> sample = coalescent.sample();
             weights[i] = sample.value().getRoot().getWeight();
@@ -247,6 +262,12 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
         double stderr = standardDeviation.evaluate(weights) / Math.sqrt(reps);
 
         System.out.println("Mean weight = " + meanWeight + " +/- " + stderr);
+
+        // Exact clade split prob = 0.2021768865708778
+
+        double exactResult = 0.2021768865708778;
+        double err = ((meanWeight - exactResult) / exactResult) * 100;
+        System.out.println("error = " + err + " %");
     }
 }
 
