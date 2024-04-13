@@ -24,7 +24,9 @@ public class TestHalfCladeSize {
     Random random = new Random();
 
     // blockSize <= numOfTaxa / 2 ; leftCladeSize -- random or half
-    public static double nonRandomTestCase(double thetaExact, int simReps, int numOfTaxa, int blockSize) {
+    public static List<Number> nonRandomTestCase(double thetaExact, int simReps, int numOfTaxa, int blockSize) {
+
+        List<Number> results = new ArrayList<>();
 
         double err = 0;
 
@@ -99,12 +101,20 @@ public class TestHalfCladeSize {
 
         System.out.println("num of sim = " + simReps);
         System.out.println("Simulation mean weight = " + meanWeight + " +/- " + stderr);
-        System.out.println("Time took: " + ((ending - starting) / 1000) + " seconds");
-
+        double time = (ending - starting) / 1000;
+        System.out.println("Time took: " + time + " seconds");
         err = ((meanWeight - exactResults) / exactResults) * 100;
         System.out.println("error between exact and sim results= " + err + " %");
 
-        return err;
+        // numOfTaxa, simReps, exactResult, simResult, error, simTime
+        results.add(numOfTaxa);
+        results.add(simReps);
+        results.add(exactResults);
+        results.add(meanWeight);
+        results.add(err);
+        results.add(time);
+
+        return results;
     }
 
 
@@ -115,11 +125,18 @@ public class TestHalfCladeSize {
         int blockSize = 4;
 
         int eachSimRepRepeat = 10;
-        double[][] eachSimRepErr = new double[simRepsExp][eachSimRepRepeat];
+        // double[][] eachSimRepErr = new double[simRepsExp][eachSimRepRepeat];
 
         for (int expNum = 0; expNum < simRepsExp; expNum++) { // for different number of simulations
             int simReps = (int) Math.pow(2, expNum + 3);
-            nonRandomTestCase(thetaExact, simReps, numOfTaxa, blockSize);
+            double[] eachSimRepErr = new double[eachSimRepRepeat];
+            for (int i = 0; i < eachSimRepRepeat; i++) {
+                List<Number> results = nonRandomTestCase(thetaExact, simReps, numOfTaxa, blockSize);
+                eachSimRepErr[i] = (double) results.get(4);
+                Mean mean = new Mean();
+                double eachSimRepErrMean = mean.evaluate(eachSimRepErr);
+            }
+
 
 //            for (int i = 0; i < eachSimRepRepeat; i++) {
 //                double err = nonRandomTestCase(thetaExact, simReps, numOfTaxa, blockSize);
