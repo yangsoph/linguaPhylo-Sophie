@@ -23,6 +23,7 @@ public class TestExactMethod {
             /// Random random = new Random();
             double theta = 1;
 
+            // For numOfTaxa > 20, cladeSplitProb <= 0
             int numOfTaxa = 20;
 
             List<Taxon> rightClade = new ArrayList<>();
@@ -52,9 +53,9 @@ public class TestExactMethod {
 
             System.out.println("Clade split prob = " + cladeSplitProb);
 
-            /*
             if (cladeSplitProb <= 0) {
 
+                /*
                 System.out.println("cladeSplitProb <= 0, num of taxa = " + numOfTaxa);
                 System.out.println("Clade split prob = " + cladeSplitProb);
                 System.out.println("leftClade = " + leftClade);
@@ -62,9 +63,9 @@ public class TestExactMethod {
                 System.out.println("tau = " + tau);
                 System.out.println();
 
-            }
+                 */
 
-             */
+            }
         }
     }
 }
