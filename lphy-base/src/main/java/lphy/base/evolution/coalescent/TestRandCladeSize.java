@@ -31,12 +31,12 @@ public class TestRandCladeSize {
         int numOfTaxa = 20;
 
         int cladeReps = 100;
-        int simRepsExp = 10;
+        int simRepsExp = 15;
 
         double[][] exactResults = new double[simRepsExp][cladeReps];
         double[][] simResults = new double[simRepsExp][cladeReps];
 
-        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_rand_clade_size.csv");
+        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/rand_clade_size_output.csv");
         FileWriter fileWriter = new FileWriter(outputFile);
         PrintWriter writer = new PrintWriter(fileWriter);
 
@@ -52,8 +52,8 @@ public class TestRandCladeSize {
         writer.println(sb.toString());
 
         // reps for simulation progressively increase [8, 16, 32, 64, 128, 256, 512]
-        for (int expNum = 0; expNum < simRepsExp; expNum++) { // for different number of simulations
-            int simReps = (int) Math.pow(2, expNum + 3);
+        for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
+            int simReps = (int) Math.pow(2, expNum);
 
             for (int cReps = 0; cReps < cladeReps; cReps++) { // for different clade splits
 
