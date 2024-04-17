@@ -31,6 +31,9 @@ public class ExactMethod {
         List<Taxon> rightClade = Arrays.asList(C);
         List<Double> tau = Arrays.asList(1.0);
         // Correct. Got 0.7547470392190384
+        /*
+
+         */
 
         // System.out.println(computeProbability(theta, leftClade, rightClade, tau));
 

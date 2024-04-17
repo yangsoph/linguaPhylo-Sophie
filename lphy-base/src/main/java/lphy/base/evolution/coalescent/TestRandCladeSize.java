@@ -24,6 +24,8 @@ public class TestRandCladeSize {
 
     public static void main(String[] args) throws IOException {
 
+        // 10000 simulations, time for simulation: 78.28 ms, time for exact method: 1.14 ms
+
         Random random = new Random();
 
         Value<Number> thetaSim = new Value<>("theta", 1);
@@ -31,12 +33,12 @@ public class TestRandCladeSize {
         int numOfTaxa = 20;
 
         int cladeReps = 100;
-        int simRepsExp = 15;
+        int simRepsExp = 21;
 
         double[][] exactResults = new double[simRepsExp][cladeReps];
         double[][] simResults = new double[simRepsExp][cladeReps];
 
-        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/rand_clade_size_output.csv");
+        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_error_time_20taxa.csv");
         FileWriter fileWriter = new FileWriter(outputFile);
         PrintWriter writer = new PrintWriter(fileWriter);
 
@@ -48,12 +50,14 @@ public class TestRandCladeSize {
         sb.append("exactResult").append(separator);
         sb.append("simResult").append(separator);
         sb.append("error").append(separator);
+        sb.append("exactTime").append(separator);
         sb.append("simTime").append(separator);
         writer.println(sb.toString());
 
         // reps for simulation progressively increase [8, 16, 32, 64, 128, 256, 512]
         for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
             int simReps = (int) Math.pow(2, expNum);
+            //int simReps = 10000;
 
             for (int cReps = 0; cReps < cladeReps; cReps++) { // for different clade splits
 
@@ -86,16 +90,20 @@ public class TestRandCladeSize {
                 Taxon[] taxaArray = taxaList.toArray(new Taxon[]{});
 
 
+                long startingExact = System.currentTimeMillis();
                 exactResults[expNum][cReps] = computeProbability(thetaExact, leftCladeList, rightCladeList, tauList);
-                System.out.println(" ");
-                System.out.println("Exact clade split prob = " + exactResults[expNum][cReps]);
+                long endingExact = System.currentTimeMillis();
+                long timeExact = (endingExact - startingExact);
+
+//                System.out.println(" ");
+//                System.out.println("Exact clade split prob = " + exactResults[expNum][cReps]);
 
                 Value<Taxa> taxaSim = new Value<>("taxa", new Taxa.Simple(taxaArray));
                 Value<Integer> nSim = new Value<>("n", numOfTaxa);
                 Value<Taxa> leftCladeSim = new Value<>("taxa", new Taxa.Simple(leftCladeArray));
                 Value<Taxa> rightCladeSim = new Value<>("taxa", new Taxa.Simple(rightCladeArray));
 
-                long starting = System.currentTimeMillis();
+                long startingSim = System.currentTimeMillis();
 
                 // for each number of simulation, run that many times, average
                 double[] weights = new double[simReps];
@@ -106,18 +114,20 @@ public class TestRandCladeSize {
                 }
                 Mean mean = new Mean();
                 simResults[expNum][cReps] = mean.evaluate(weights);
+
+                long endingSim = System.currentTimeMillis();
+
                 StandardDeviation standardDeviation = new StandardDeviation();
                 double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
 
-                System.out.println("num of sim = " + simReps);
-                System.out.println("Simulation mean weight = " + simResults[expNum][cReps] + " +/- " + stderr);
+//                System.out.println("num of sim = " + simReps);
+//                System.out.println("Simulation mean weight = " + simResults[expNum][cReps] + " +/- " + stderr);
 
-                long ending = System.currentTimeMillis();
-                double time = (ending - starting) / 1000;
-                System.out.println("Time took: " + time + " seconds");
+                long timeSim = (endingSim - startingSim);
+//                System.out.println("Time took: " + timeSim + " ms");
 
                 double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
-                System.out.println("error = " + err + " %");
+//                System.out.println("error = " + err + " %");
 
                 // numOfTaxa, simReps, exactResult, simResult, error, simTime
                 sb = new StringBuilder();
@@ -126,7 +136,8 @@ public class TestRandCladeSize {
                 sb.append(exactResults[expNum][cReps]).append(separator);
                 sb.append(simResults[expNum][cReps]).append(separator);
                 sb.append(err).append(separator);
-                sb.append(time).append(separator);
+                sb.append(timeExact).append(separator);
+                sb.append(timeSim).append(separator);
                 writer.println(sb.toString());
                 writer.flush();
 
