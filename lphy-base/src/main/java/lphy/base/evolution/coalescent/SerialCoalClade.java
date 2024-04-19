@@ -12,13 +12,13 @@ import lphy.core.model.ValueUtils;
 import lphy.core.model.annotation.ParameterInfo;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import java.util.*;
 
 import static lphy.base.evolution.coalescent.CoalParamNames.thetaParamName;
 
 public class SerialCoalClade extends TaxaConditionedTreeGenerator {
+
     private Value<Number> theta;
     private Value<Taxa> leftClade;
     private Value<Taxa> rightClade;
@@ -112,11 +112,7 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
 
             // update totalPairCount
             int activeNodesCount = activeLeft.size() + activeRight.size();
-            if (activeNodesCount >= 2) {
-                totalPairCount = (int) CombinatoricsUtils.binomialCoefficient(activeNodesCount, 2);
-            } else {
-                totalPairCount = 0;
-            }
+            totalPairCount = activeNodesCount * (activeNodesCount - 1) / 2;
 
             // check can create C or not
             if (activeLeft.size() == 1 && activeRight.size() == 1
@@ -125,16 +121,8 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
             }
 
             // update the number of valid pairs in each group
-            if (activeLeft.size() >= 2) {
-                validPairCountLeft = (int) CombinatoricsUtils.binomialCoefficient(activeLeft.size(), 2);
-            } else {
-                validPairCountLeft = 0;
-            }
-            if (activeRight.size() >= 2) {
-                validPairCountRight = (int) CombinatoricsUtils.binomialCoefficient(activeRight.size(), 2);
-            } else {
-                validPairCountRight = 0;
-            }
+            validPairCountLeft = activeLeft.size() * (activeLeft.size() - 1) / 2;
+            validPairCountRight = activeRight.size() * (activeRight.size() - 1) / 2;
 
             //System.out.println("validPairCountLeft = " + validPairCountLeft + "  validPairCountRight = " + validPairCountRight);
 

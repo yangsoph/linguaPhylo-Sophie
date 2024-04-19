@@ -24,8 +24,6 @@ public class TestRandCladeSize {
 
     public static void main(String[] args) throws IOException {
 
-        // 10000 simulations, time for simulation: 78.28 ms, time for exact method: 1.14 ms
-
         Random random = new Random();
 
         Value<Number> thetaSim = new Value<>("theta", 1);

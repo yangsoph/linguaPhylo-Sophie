@@ -17,32 +17,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static lphy.base.evolution.coalescent.ExactMethod.computeProbability;
-
 public class TestCladeSplitProb {
     public static void main(String[] args) throws IOException {
-
-        // 10000 simulations, time for simulation: 78.28 ms, time for exact method: 1.14 ms
 
         Random random = new Random();
 
         Value<Number> thetaSim = new Value<>("theta", 1);
         double thetaExact = ValueUtils.doubleValue(thetaSim);
-        // int numOfTaxa = 30;
-        int[] numOfTaxaArray = new int[]{10, 20, 30, 40, 50, 60};
-        // int[] numOfTaxaArray = new int[]{60};
 
-        for (int n = 0; n < numOfTaxaArray.length; n++) {
+        int cladeReps = 100;
+        int simRepsExp = 21;
 
-            int numOfTaxa = numOfTaxaArray[n];
+        double[][] exactResults = new double[simRepsExp][cladeReps];
+        double[][] simResults = new double[simRepsExp][cladeReps];
 
-            int cladeReps = 100;
-            int simRepsExp = 10; // How many is needed?
+        for (int numOfTaxa = 10; numOfTaxa <= 60; numOfTaxa += 10) {
 
-            double[][] exactResults = new double[simRepsExp][cladeReps];
-            double[][] simResults = new double[simRepsExp][cladeReps];
-
-            File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_varyTo_60taxa.csv");
+            String pathName = "/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_" + numOfTaxa + "taxa.csv";
+            File outputFile = new File(pathName);
             FileWriter fileWriter = new FileWriter(outputFile);
             PrintWriter writer = new PrintWriter(fileWriter);
 
@@ -54,11 +46,10 @@ public class TestCladeSplitProb {
             sb.append("exactResult").append(separator);
             sb.append("simResult").append(separator);
             sb.append("error").append(separator);
-            // sb.append("exactTime").append(separator);
             sb.append("simTime").append(separator);
             writer.println(sb.toString());
 
-            // reps for simulation progressively increase [8, 16, 32, 64, 128, 256, 512]
+            // reps for simulation progressively increase [16, 32, 64, ...]
             for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
                 int simReps = (int) Math.pow(2, expNum);
 
@@ -98,11 +89,8 @@ public class TestCladeSplitProb {
                     Taxon[] taxaArray = taxaList.toArray(new Taxon[]{});
 
                     // Exact method
-                    // long startingExact = System.currentTimeMillis();
                     ExactMethodV2 exactV2Result = new ExactMethodV2(numOfTaxa);
                     exactResults[expNum][cReps] = exactV2Result.getProbability(thetaExact, timesLeft, timesRight);
-                    // long endingExact = System.currentTimeMillis();
-                    // long timeExact = (endingExact - startingExact);
 
                     Value<Taxa> taxaSim = new Value<>("taxa", new Taxa.Simple(taxaArray));
                     Value<Integer> nSim = new Value<>("n", numOfTaxa);
@@ -123,14 +111,14 @@ public class TestCladeSplitProb {
 
                     long endingSim = System.currentTimeMillis();
 
-                    StandardDeviation standardDeviation = new StandardDeviation();
-                    double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
+                    // StandardDeviation standardDeviation = new StandardDeviation();
+                    // double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
 
                     long timeSim = (endingSim - startingSim);
 
                     double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
 
-                    System.out.println("Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
+                    System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
 
                     // numOfTaxa, simReps, exactResult, simResult, error, simTime
                     sb = new StringBuilder();
@@ -139,7 +127,6 @@ public class TestCladeSplitProb {
                     sb.append(exactResults[expNum][cReps]).append(separator);
                     sb.append(simResults[expNum][cReps]).append(separator);
                     sb.append(err).append(separator);
-                    // sb.append(timeExact).append(separator);
                     sb.append(timeSim).append(separator);
                     writer.println(sb.toString());
                     writer.flush();
