@@ -13,6 +13,7 @@ import java.util.stream.DoubleStream;
 public class ExactMethodV2 {
 
     // static cache tables
+    static int binomialCoefficientThreshold = 50;
     private static long[][] combination;
     private static double[][] squareBracketsDivParentheses;
     private static double[][] parenthesesDivFactorials;
@@ -65,8 +66,8 @@ public class ExactMethodV2 {
 //	    	}
 //	    }
 
-        combination = new long[n + 1][n + 1];
-        for (int i = 0; i <= n; i++) {
+        combination = new long[binomialCoefficientThreshold + 1][binomialCoefficientThreshold + 1];
+        for (int i = 0; i <= binomialCoefficientThreshold; i++) {
             for (int j = 0; j <= i; j++) {
                 combination[i][j] = CombinatoricsUtils.binomialCoefficient(i, j);
             }
@@ -254,7 +255,7 @@ public class ExactMethodV2 {
                 r *= (kPrev - n) * (kPrev - n - 1.0) / ((prev - dj - n) * (prev - dj - n - 1));
                 // r *= (dk - n)/(dj + n + 1.0);
             }
-            r *= combination[dj + dk][dj];
+            r *= binomialCoeff((dj + dk), dj);
             pairPickingCache[jPrev][kPrev][dj][dk] = r;
         }
 
@@ -262,8 +263,21 @@ public class ExactMethodV2 {
     }
 
     public static double contempFormula(int parentSize, int leftSize) {
-        return (2.0 / (parentSize - 1)) * (1.0 / combination[parentSize][leftSize]);
+        return (2.0 / (parentSize - 1)) * (1.0 / binomialCoeff(parentSize, leftSize));
+    }
+
+    public static long binomialCoeff(int n, int k) {
+        if (n < binomialCoefficientThreshold) {
+            return combination[n][k];
+        } else {
+            long x = 1;
+            for (int i = 0; i < (k - 1); i++) {
+                x *= (n - i) / (k - i);
+            }
+            return x;
+        }
     }
 
 }
+
 

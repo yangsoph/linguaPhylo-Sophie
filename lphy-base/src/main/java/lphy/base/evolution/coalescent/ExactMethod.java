@@ -288,4 +288,5 @@ public class ExactMethod {
         }
         return (x / factorial);
     }
+
 }

@@ -25,32 +25,32 @@ public class TestCladeSplitProb {
         Value<Number> thetaSim = new Value<>("theta", 1);
         double thetaExact = ValueUtils.doubleValue(thetaSim);
 
-        int cladeReps = 100;
-        int simRepsExp = 21;
+        int cladeReps = 1;
+        int simRepsExp = 2;
 
         double[][] exactResults = new double[simRepsExp][cladeReps];
         double[][] simResults = new double[simRepsExp][cladeReps];
 
-        for (int numOfTaxa = 10; numOfTaxa <= 60; numOfTaxa += 10) {
+        for (int numOfTaxa = 10; numOfTaxa <= 130; numOfTaxa ++) {
 
-            String pathName = "/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_" + numOfTaxa + "taxa.csv";
-            File outputFile = new File(pathName);
-            FileWriter fileWriter = new FileWriter(outputFile);
-            PrintWriter writer = new PrintWriter(fileWriter);
-
-            // header: numOfTaxa, simReps, exactResult, simResult, error, simTime
-            String separator = ",";
-            StringBuilder sb = new StringBuilder();
-            sb.append("numOfTaxa").append(separator);
-            sb.append("simReps").append(separator);
-            sb.append("exactResult").append(separator);
-            sb.append("simResult").append(separator);
-            sb.append("error").append(separator);
-            sb.append("simTime").append(separator);
-            writer.println(sb.toString());
+//            String pathName = "/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_" + numOfTaxa + "taxa.csv";
+//            File outputFile = new File(pathName);
+//            FileWriter fileWriter = new FileWriter(outputFile);
+//            PrintWriter writer = new PrintWriter(fileWriter);
+//
+//            // header: numOfTaxa, simReps, exactResult, simResult, error, simTime
+//            String separator = ",";
+//            StringBuilder sb = new StringBuilder();
+//            sb.append("numOfTaxa").append(separator);
+//            sb.append("simReps").append(separator);
+//            sb.append("exactResult").append(separator);
+//            sb.append("simResult").append(separator);
+//            sb.append("error").append(separator);
+//            sb.append("simTime").append(separator);
+//            writer.println(sb.toString());
 
             // reps for simulation progressively increase [16, 32, 64, ...]
-            for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
+            for (int expNum = 1; expNum < simRepsExp; expNum++) { // for different number of simulations
                 int simReps = (int) Math.pow(2, expNum);
 
                 for (int cReps = 0; cReps < cladeReps; cReps++) { // for different clade splits
@@ -89,52 +89,56 @@ public class TestCladeSplitProb {
                     Taxon[] taxaArray = taxaList.toArray(new Taxon[]{});
 
                     // Exact method
+                    long startingExact = System.currentTimeMillis();
                     ExactMethodV2 exactV2Result = new ExactMethodV2(numOfTaxa);
                     exactResults[expNum][cReps] = exactV2Result.getProbability(thetaExact, timesLeft, timesRight);
+                    long endingExact = System.currentTimeMillis();
+                    long timeExact = (endingExact - startingExact);
+                    System.out.println("num of taxa = " + numOfTaxa + ", timeExact = " + timeExact);
 
-                    Value<Taxa> taxaSim = new Value<>("taxa", new Taxa.Simple(taxaArray));
-                    Value<Integer> nSim = new Value<>("n", numOfTaxa);
-                    Value<Taxa> leftCladeSim = new Value<>("taxa", new Taxa.Simple(leftCladeArray));
-                    Value<Taxa> rightCladeSim = new Value<>("taxa", new Taxa.Simple(rightCladeArray));
+//                    Value<Taxa> taxaSim = new Value<>("taxa", new Taxa.Simple(taxaArray));
+//                    Value<Integer> nSim = new Value<>("n", numOfTaxa);
+//                    Value<Taxa> leftCladeSim = new Value<>("taxa", new Taxa.Simple(leftCladeArray));
+//                    Value<Taxa> rightCladeSim = new Value<>("taxa", new Taxa.Simple(rightCladeArray));
 
-                    long startingSim = System.currentTimeMillis();
+//                    long startingSim = System.currentTimeMillis();
+//
+////                    // for each number of simulation, run that many times, average
+////                    double[] weights = new double[simReps];
+////                    for (int i = 0; i < simReps; i++) {
+////                        SerialCoalClade coalescent = new SerialCoalClade(thetaSim, nSim, taxaSim, null, leftCladeSim, rightCladeSim);
+////                        RandomVariable<TimeTree> sample = coalescent.sample();
+////                        weights[i] = sample.value().getRoot().getWeight();
+////                    }
+////                    Mean mean = new Mean();
+////                    simResults[expNum][cReps] = mean.evaluate(weights);
+//
+////                    long endingSim = System.currentTimeMillis();
+//
+//                    // StandardDeviation standardDeviation = new StandardDeviation();
+//                    // double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
+//
+//                    long timeSim = (endingSim - startingSim);
+//
+//                    double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
 
-                    // for each number of simulation, run that many times, average
-                    double[] weights = new double[simReps];
-                    for (int i = 0; i < simReps; i++) {
-                        SerialCoalClade coalescent = new SerialCoalClade(thetaSim, nSim, taxaSim, null, leftCladeSim, rightCladeSim);
-                        RandomVariable<TimeTree> sample = coalescent.sample();
-                        weights[i] = sample.value().getRoot().getWeight();
-                    }
-                    Mean mean = new Mean();
-                    simResults[expNum][cReps] = mean.evaluate(weights);
-
-                    long endingSim = System.currentTimeMillis();
-
-                    // StandardDeviation standardDeviation = new StandardDeviation();
-                    // double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
-
-                    long timeSim = (endingSim - startingSim);
-
-                    double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
-
-                    System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
+//                    System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
 
                     // numOfTaxa, simReps, exactResult, simResult, error, simTime
-                    sb = new StringBuilder();
-                    sb.append(numOfTaxa).append(separator);
-                    sb.append(simReps).append(separator);
-                    sb.append(exactResults[expNum][cReps]).append(separator);
-                    sb.append(simResults[expNum][cReps]).append(separator);
-                    sb.append(err).append(separator);
-                    sb.append(timeSim).append(separator);
-                    writer.println(sb.toString());
-                    writer.flush();
+//                    sb = new StringBuilder();
+//                    sb.append(numOfTaxa).append(separator);
+//                    sb.append(simReps).append(separator);
+//                    sb.append(exactResults[expNum][cReps]).append(separator);
+//                    sb.append(simResults[expNum][cReps]).append(separator);
+//                    sb.append(err).append(separator);
+//                    sb.append(timeSim).append(separator);
+//                    writer.println(sb.toString());
+//                    writer.flush();
 
                 }
             }
-            writer.flush();
-            writer.close();
+//            writer.flush();
+//            writer.close();
         }
     }
 }
