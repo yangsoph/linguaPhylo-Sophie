@@ -96,7 +96,7 @@ public class ExactMethodV2 {
         Arrays.sort(timesLeft);
         Arrays.sort(timesRight);
 
-        // times: distinct sampling times
+        // samplingTimes: distinct sampling times
         double[] samplingTimes = DoubleStream.concat(Arrays.stream(timesLeft), Arrays.stream(timesRight))
                 .distinct().sorted().toArray();
 
@@ -106,6 +106,7 @@ public class ExactMethodV2 {
         // taus: sampling intervals
         double[] taus = new double[samplingTimes.length - 1];
 
+        // count and assign sampledLeftAtTime, sampledRightAtTime
         int iLeft = 0;
         int iRight = 0;
         for (int i = 0; i < samplingTimes.length; i++) {

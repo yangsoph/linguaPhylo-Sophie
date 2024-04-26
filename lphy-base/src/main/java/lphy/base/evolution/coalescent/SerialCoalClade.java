@@ -109,7 +109,7 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
 
             // update totalPairCount
             int activeNodesCount = activeLeft.size() + activeRight.size();
-            totalPairCount = activeNodesCount * (activeNodesCount - 1) / 2;
+            totalPairCount = activeNodesCount * (activeNodesCount - 1) / 2; // activeNodesCount choose 2
 
             // check can create C or not
             if (activeLeft.size() == 1 && activeRight.size() == 1
@@ -118,8 +118,8 @@ public class SerialCoalClade extends TaxaConditionedTreeGenerator {
             }
 
             // update the number of valid pairs in each group
-            validPairCountLeft = activeLeft.size() * (activeLeft.size() - 1) / 2;
-            validPairCountRight = activeRight.size() * (activeRight.size() - 1) / 2;
+            validPairCountLeft = activeLeft.size() * (activeLeft.size() - 1) / 2; // activeLeft choose 2
+            validPairCountRight = activeRight.size() * (activeRight.size() - 1) / 2; // activeRight choose 2
 
             // update validPairCount
             if (canCreateC == false) {
