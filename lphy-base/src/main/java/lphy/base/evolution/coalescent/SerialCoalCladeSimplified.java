@@ -4,10 +4,7 @@ import lphy.base.evolution.tree.TimeTreeNode;
 import lphy.core.model.RandomVariable;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.DoubleStream;
 
 
@@ -18,6 +15,10 @@ public class SerialCoalCladeSimplified {
 
     static int binomialCoefficientThreshold = 50;
     private static long[][] combination;
+
+    public SerialCoalCladeSimplified(int n) {
+        setUpCache(n);
+    }
 
     private void setUpCache(int n) {
         combination = new long[binomialCoefficientThreshold + 1][binomialCoefficientThreshold + 1];
@@ -198,6 +199,19 @@ public class SerialCoalCladeSimplified {
             }
             return x;
         }
+    }
+
+    public static void main(String[] args) { // ------------------------------------------------------------------------
+
+        int parentCladeSize = 3;
+        SerialCoalCladeSimplified testCase = new SerialCoalCladeSimplified(parentCladeSize);
+
+        double theta = 1.0;
+
+        List<Double> timesLeft = new ArrayList<>(Arrays.asList(0.0, 0.0));
+        List<Double> timesRight = new ArrayList<>(Arrays.asList(1.0));
+
+        System.out.println(testCase.sample(theta, timesLeft, timesRight));
     }
 
 }
