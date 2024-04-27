@@ -1,35 +1,41 @@
 package lphy.base.evolution.coalescent;
 
-import lphy.base.evolution.tree.TimeTree;
 import lphy.base.evolution.tree.TimeTreeNode;
 import lphy.core.model.RandomVariable;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.DoubleStream;
+
 
 public class SerialCoalCladeSimplified {
     // double theta, double[] timesLeft, double[] timesRight
 
-    public double sample(double theta, double[] timesLeft, double[] timesRight) {
+    Random random = new Random();
+
+    public double sample(double theta, List<Double> timesLeft, List<Double> timesRight) {
 
         double totalWeight = 1;
 
         double popSize = theta;
 
         // nLeft, nRight: total number of taxa in the left and right clade
-        int nLeft = timesLeft.length;
-        int nRight = timesRight.length;
-        Arrays.sort(timesLeft);
-        Arrays.sort(timesRight);
+        int nLeft = timesLeft.size();
+        int nRight = timesRight.size();
+        // sort in reverse order, at coal event, remove the youngest, add the parent to the end of the list
+        Collections.sort(timesLeft, Collections.reverseOrder());
+        Collections.sort(timesRight, Collections.reverseOrder());
 
         // samplingTimes: distinct sampling times
-        double[] samplingTimes = DoubleStream.concat(Arrays.stream(timesLeft), Arrays.stream(timesRight))
+        double[] samplingTimes = DoubleStream.concat((DoubleStream) Arrays.stream(timesLeft), (DoubleStream) Arrays.stream(timesRight))
                 .distinct().sorted().toArray();
 
         double time = samplingTimes[0]; // initial time: the first sampling time
         double lastSamplingTime = samplingTimes[samplingTimes.length - 1];
         // no good? sort the time, remove it along the way
-        int timeIndex = 0; // for jumping to the next sampling time, initially start from 0
+        int currentTimeIndex = 0; // for jumping to the next sampling time, initially start from 0
 
         // sampledLeftAtTime, sampledRightAtTime: how many samples are added at a sampling time
         int[] sampledLeftAtTime = new int[samplingTimes.length];
@@ -97,7 +103,7 @@ public class SerialCoalCladeSimplified {
 
             // if there's only 1 active node left, cannot coalesce. Go to the next sampling time
             if (activeNodesCount == 1) {
-                time = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
+                time = samplingTimes[currentTimeIndex+1];
             } else { // there are more than 1 active node, can coalesce
 
                 // if there is valid pair, draw time
@@ -107,21 +113,22 @@ public class SerialCoalCladeSimplified {
                     time += x;
 
                     // if time too large, go to next sampling time
-                    if (leavesToBeAdded.size() > 0 && time > leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge()) {
-                        time = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
+                    if ((toBeAddedLeftSize + toBeAddedRightSize) > 0 &&
+                            time > samplingTimes[currentTimeIndex+1]) {
+                        time = samplingTimes[currentTimeIndex+1];
                     }
                     else {
                         // At least one group has >= 2 active lineages that can coalesce
                         if (canCreateC == false) {
                             int randomNum = random.nextInt(validPairCount);
                             if (randomNum < validPairCountLeft) { // left pair coalescence
-                                coalescentEvent(activeLeft, time);
+                                coalescentEvent(timesLeft);
                             } else { // right
-                                coalescentEvent(activeRight, time);
+                                coalescentEvent(timesRight);
                             }
                             totalWeight *= (double) validPairCount / totalPairCount;
                         } else { // canCreateC == true
-                            coalescentEvent(activeLeft, activeRight, activeLeft, time);
+                            coalescentEvent(timesLeft, timesRight, timesLeft);
                         }
                     }
                 } else { // no valid pari, go to next time, p_nc
@@ -153,4 +160,21 @@ public class SerialCoalCladeSimplified {
 
         return new RandomVariable<>("\u03C8", tree, this);
     }
+
+    /* Helper method */
+    private void coalescentEvent(Double[] activeClade, double time) {
+        coalescentEvent(activeClade, activeClade, activeClade, time);
+    }
+
+    /* Helper method */
+    private void coalescentEvent(Double[] firstChildClade, Double[] secondChildClade, Double[] parentClade, double time) {
+        Double parent;
+        Double firstChild;
+        Double secondChild;
+        firstChild = firstChildClade.remove(random.nextInt(firstChildClade.size()));
+        secondChild = secondChildClade.remove(random.nextInt(secondChildClade.size()));
+        parent = new TimeTreeNode(time, new TimeTreeNode[]{firstChild, secondChild});
+        parentClade.add(parent);
+    }
+
 }
