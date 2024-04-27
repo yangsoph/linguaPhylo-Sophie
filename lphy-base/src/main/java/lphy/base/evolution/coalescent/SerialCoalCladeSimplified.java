@@ -2,6 +2,7 @@ package lphy.base.evolution.coalescent;
 
 import lphy.base.evolution.tree.TimeTreeNode;
 import lphy.core.model.RandomVariable;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,21 +16,30 @@ public class SerialCoalCladeSimplified {
 
     Random random = new Random();
 
+    static int binomialCoefficientThreshold = 50;
+    private static long[][] combination;
+
+    private void setUpCache(int n) {
+        combination = new long[binomialCoefficientThreshold + 1][binomialCoefficientThreshold + 1];
+        for (int i = 0; i <= binomialCoefficientThreshold; i++) {
+            for (int j = 0; j <= i; j++) {
+                combination[i][j] = CombinatoricsUtils.binomialCoefficient(i, j);
+            }
+        }
+    }
+
     public double sample(double theta, List<Double> timesLeft, List<Double> timesRight) {
 
         double totalWeight = 1;
 
         double popSize = theta;
 
-        // nLeft, nRight: total number of taxa in the left and right clade
-        int nLeft = timesLeft.size();
-        int nRight = timesRight.size();
-        // sort in reverse order, at coal event, remove the youngest, add the parent to the end of the list
+        // sort input in reverse order, at coal event, remove the youngest, add the parent to the end of the list
         Collections.sort(timesLeft, Collections.reverseOrder());
         Collections.sort(timesRight, Collections.reverseOrder());
 
         // samplingTimes: distinct sampling times
-        double[] samplingTimes = DoubleStream.concat((DoubleStream) Arrays.stream(timesLeft), (DoubleStream) Arrays.stream(timesRight))
+        double[] samplingTimes = DoubleStream.concat((DoubleStream) timesLeft, (DoubleStream) timesRight)
                 .distinct().sorted().toArray();
 
         double time = samplingTimes[0]; // initial time: the first sampling time
@@ -47,12 +57,11 @@ public class SerialCoalCladeSimplified {
         int iLeft = 0;
         int iRight = 0;
         for (int i = 0; i < samplingTimes.length; i++) {
-            while ((iLeft < timesLeft.length) && (timesLeft[iLeft] == samplingTimes[i])) {
+            while ((iLeft < timesLeft.size()) && (timesLeft.get(iLeft) == samplingTimes[i])) {
                 sampledLeftAtTime[i]++;
-
                 iLeft++;
             }
-            while ((iRight < timesRight.length) && (timesRight[iRight] == samplingTimes[i])) {
+            while ((iRight < timesRight.size()) && (timesRight.get(iRight) == samplingTimes[i])) {
                 sampledRightAtTime[i]++;
                 iRight++;
             }
@@ -64,8 +73,8 @@ public class SerialCoalCladeSimplified {
         // initially, the taxa sampled at the first sampling time are active, the rest are in toBeAdded
         int activeLeftSize = sampledLeftAtTime[0];
         int activeRightSize = sampledRightAtTime[0];
-        int toBeAddedLeftSize = timesLeft.length - activeLeftSize;
-        int toBeAddedRightSize = timesRight.length - activeRightSize;
+        int toBeAddedLeftSize = timesLeft.size() - activeLeftSize;
+        int toBeAddedRightSize = timesRight.size() - activeRightSize;
 
         int validPairCount;
         int totalPairCount;
@@ -122,59 +131,73 @@ public class SerialCoalCladeSimplified {
                         if (canCreateC == false) {
                             int randomNum = random.nextInt(validPairCount);
                             if (randomNum < validPairCountLeft) { // left pair coalescence
-                                coalescentEvent(timesLeft);
+                                coalescentEvent(timesLeft, time);
+                                activeLeftSize -= 1; // remove two children, add one parent
                             } else { // right
-                                coalescentEvent(timesRight);
+                                coalescentEvent(timesRight, time);
+                                activeRightSize -= 1; // remove two children, add one parent
                             }
                             totalWeight *= (double) validPairCount / totalPairCount;
-                        } else { // canCreateC == true
-                            coalescentEvent(timesLeft, timesRight, timesLeft);
+                        }
+                        // Now this case might never happen? Bcs they will be contemp case
+                        else { // canCreateC == true.
+                            coalescentEvent(timesLeft, timesRight, timesLeft, time);
+                            activeRightSize -= 1;
                         }
                     }
                 } else { // no valid pari, go to next time, p_nc
                     // the probability that no coalescent before next sample, exp( -tau * (k choose 2) / theta )
-                    double nextTime = leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge();
+                    double nextTime = samplingTimes[currentTimeIndex+1];
                     double tau = nextTime - time;
-                    double noCoalescentProb = Math.exp(-tau * ((double) totalPairCount / theta.value().doubleValue()));
+                    double noCoalescentProb = Math.exp(-tau * ((double) totalPairCount / theta));
                     totalWeight *= noCoalescentProb;
                     time = nextTime;
                 }
             }
 
+            // The end of this loop, update time index, now it points to the next sampling time
+            currentTimeIndex += 1;
+
             // At the next sampling time, add nodes to activeNodes
-            while (leavesToBeAdded.size() > 0 && leavesToBeAdded.get(leavesToBeAdded.size() - 1).getAge() == time) {
-                TimeTreeNode youngest = leavesToBeAdded.remove(leavesToBeAdded.size() - 1);
-                if (youngest.getMetaData("clade").equals("left")) {
-                    activeLeft.add(youngest);
-                    toBeAddedLeft.remove(toBeAddedLeft.size() - 1);
-                } else {
-                    activeRight.add(youngest);
-                    toBeAddedRight.remove(toBeAddedRight.size() - 1);
-                }
+            while ((toBeAddedLeftSize + toBeAddedRightSize) > 0 && samplingTimes[currentTimeIndex] == time) {
+                activeLeftSize += sampledLeftAtTime[currentTimeIndex];
+                activeRightSize += sampledRightAtTime[currentTimeIndex];
+                toBeAddedLeftSize -= sampledLeftAtTime[currentTimeIndex];
+                toBeAddedRightSize -= sampledRightAtTime[currentTimeIndex];
             }
         }
 
-        tree.setRoot(activeLeft.get(0));
-        TimeTreeNode root = tree.getRoot();
-        root.setWeight(totalWeight);
+        totalWeight *= contempFormula((activeLeftSize + activeRightSize), activeLeftSize);
 
-        return new RandomVariable<>("\u03C8", tree, this);
+        return totalWeight;
     }
 
     /* Helper method */
-    private void coalescentEvent(Double[] activeClade, double time) {
+    private void coalescentEvent(List<Double> activeClade, double time) {
         coalescentEvent(activeClade, activeClade, activeClade, time);
     }
 
     /* Helper method */
-    private void coalescentEvent(Double[] firstChildClade, Double[] secondChildClade, Double[] parentClade, double time) {
-        Double parent;
-        Double firstChild;
-        Double secondChild;
-        firstChild = firstChildClade.remove(random.nextInt(firstChildClade.size()));
-        secondChild = secondChildClade.remove(random.nextInt(secondChildClade.size()));
-        parent = new TimeTreeNode(time, new TimeTreeNode[]{firstChild, secondChild});
-        parentClade.add(parent);
+    private void coalescentEvent(List<Double> firstChildClade, List<Double> secondChildClade, List<Double> parentClade, double time) {
+        firstChildClade.remove(firstChildClade.size()-1);
+        secondChildClade.remove(secondChildClade.size()-1);
+        parentClade.add(time); // use the coalescent time to represent the parent
+    }
+
+    public static double contempFormula(int parentSize, int leftSize) {
+        return (2.0 / (parentSize - 1)) * (1.0 / binomialCoeff(parentSize, leftSize));
+    }
+
+    public static long binomialCoeff(int n, int k) {
+        if (n < binomialCoefficientThreshold) {
+            return combination[n][k];
+        } else {
+            long x = 1;
+            for (int i = 0; i < (k - 1); i++) {
+                x *= (n - i) / (k - i);
+            }
+            return x;
+        }
     }
 
 }
