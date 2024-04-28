@@ -5,6 +5,7 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import java.util.*;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 /**
  * TODO
@@ -276,45 +277,86 @@ public class ExactMethodV2 {
 
         double popSize = theta;
 
+        List<Double> samplingTimes = new ArrayList<>();
+        for (int i = 0; i < timesLeft.size(); i++) {
+            if (samplingTimes.contains(timesLeft.get(i)) == false) {
+                samplingTimes.add(timesLeft.get(i));
+            }
+        }
+        for (int i = 0; i < timesRight.size(); i++) {
+            if (samplingTimes.contains(timesRight.get(i)) == false) {
+                samplingTimes.add(timesRight.get(i));
+            }
+        }
+        samplingTimes.sort(null);
+
+        System.out.println("initial samplingTimes = " + samplingTimes);
+
         // sort input in reverse order, at coal event, remove the youngest, add the parent to the end of the list
         Collections.sort(timesLeft, Collections.reverseOrder());
         Collections.sort(timesRight, Collections.reverseOrder());
 
-        // samplingTimes: distinct sampling times
-        double[] samplingTimes = DoubleStream.concat((DoubleStream) timesLeft, (DoubleStream) timesRight)
-                .distinct().sorted().toArray();
-
-        double time = samplingTimes[0]; // initial time: the first sampling time
-        double lastSamplingTime = samplingTimes[samplingTimes.length - 1];
+        double time = samplingTimes.get(0); // initial time: the first sampling time
+        double lastSamplingTime = samplingTimes.get(samplingTimes.size()-1);
         // no good? sort the time, remove it along the way
         int currentTimeIndex = 0; // for jumping to the next sampling time, initially start from 0
 
         // sampledLeftAtTime, sampledRightAtTime: how many samples are added at a sampling time
-        int[] sampledLeftAtTime = new int[samplingTimes.length];
-        int[] sampledRightAtTime = new int[samplingTimes.length];
-        // taus: sampling intervals
-        double[] taus = new double[samplingTimes.length - 1];
+//        int[] sampledLeftAtTime = new int[samplingTimes.size()];
+//        int[] sampledRightAtTime = new int[samplingTimes.size()];
+//
+//        // count and assign sampledLeftAtTime, sampledRightAtTime
 
-        // count and assign sampledLeftAtTime, sampledRightAtTime
-        int iLeft = 0;
-        int iRight = 0;
-        for (int i = 0; i < samplingTimes.length; i++) {
-            while ((iLeft < timesLeft.size()) && (timesLeft.get(iLeft) == samplingTimes[i])) {
-                sampledLeftAtTime[i]++;
-                iLeft++;
-            }
-            while ((iRight < timesRight.size()) && (timesRight.get(iRight) == samplingTimes[i])) {
-                sampledRightAtTime[i]++;
-                iRight++;
-            }
-            if (i != (samplingTimes.length - 1)) {
-                taus[i] = samplingTimes[i + 1] - samplingTimes[i];
-            }
-        }
+//        int iLeft = 0;
+////        int iRight = 0;
+//        for (int i = 0; i < samplingTimes.size(); i++) {
+////            System.out.println("i = " + i + ",  samplingTimes.get(i) = " + samplingTimes.get(i));
+//            for (int j = 0; j < timesLeft.size(); j++) {
+////                System.out.println("j = "+ j + ",  timesLeft.get(j) = " + timesLeft.get(j));
+//                System.out.println("i = " + i + ",  samplingTimes.get(i) = " + samplingTimes.get(i) + ",  j = "+ j + ",  timesLeft.get(j) = " + timesLeft.get(j) + ",  timesLeft.get(j) == samplingTimes.get(i) " + (timesLeft.get(j) == samplingTimes.get(i)));
+//                if (timesLeft.get(j) == samplingTimes.get(i)) {
+////                    System.out.println("sampledLeftAtTime[i] = " + sampledLeftAtTime[i]);
+//                    sampledLeftAtTime[i]++;
+//                }
+//            }
+//            for (int k = 0; k < timesRight.size(); k++) {
+//                System.out.println("k = "+ k);
+//                if (timesRight.get(k) == samplingTimes.get(i)) {
+//                    sampledRightAtTime[i]++;
+//                }
+//            }
+//        }
+////            while ((iLeft < timesLeft.size()) && (timesLeft.get(iLeft) == samplingTimes.get(i))) {
+//                System.out.println("sampledLeftAtTime[i] = " + sampledLeftAtTime[i]);
+//                sampledLeftAtTime[i]++;
+//                iLeft++;
+//            }
+//            while ((iRight < timesRight.size()) && (timesRight.get(iRight) == samplingTimes.get(i))) {
+//                sampledRightAtTime[i]++;
+//                iRight++;
+//            }
+//        }
 
+//        System.out.println("sampledLeftAtTime = " + Arrays.toString(sampledLeftAtTime) + ",  sampledRightAtTime = " + Arrays.toString(sampledRightAtTime));
+
+        int activeLeftSize = 0;
+        int activeRightSize = 0;
         // initially, the taxa sampled at the first sampling time are active, the rest are in toBeAdded
-        int activeLeftSize = sampledLeftAtTime[0];
-        int activeRightSize = sampledRightAtTime[0];
+        int iLeft = timesLeft.size() - 1;
+        int iRight = 0;
+        while (timesLeft.get(iLeft) == samplingTimes.get(currentTimeIndex)) {
+            activeLeftSize ++;
+            iLeft --;
+        }
+        while (timesRight.get(iRight) == samplingTimes.get(currentTimeIndex)) {
+            activeRightSize ++;
+            iRight --;
+        }
+        System.out.println("activeLeftSize = " + activeLeftSize + ",  activeRightSize = " + activeRightSize);
+
+
+//        int activeLeftSize = sampledLeftAtTime[0];
+//        int activeRightSize = sampledRightAtTime[0];
         int toBeAddedLeftSize = timesLeft.size() - activeLeftSize;
         int toBeAddedRightSize = timesRight.size() - activeRightSize;
 
@@ -330,6 +372,8 @@ public class ExactMethodV2 {
 
         //------------------------------------------------------------------------------------------------------------------------------
         while (time != lastSamplingTime) {
+
+            System.out.println(" ");
 
             // update totalPairCount
             int activeNodesCount = activeLeftSize + activeRightSize;
@@ -352,9 +396,13 @@ public class ExactMethodV2 {
                 validPairCount = 1;
             }
 
+//            System.out.println("activeLeftSize = " + activeLeftSize + ",  activeRightSize = " + activeRightSize);
+            System.out.println("totalPairCount = " + totalPairCount + ",  validPairCount = " + validPairCount);
+            System.out.println("canCreateC = " + canCreateC);
+
             // if there's only 1 active node left, cannot coalesce. Go to the next sampling time
             if (activeNodesCount == 1) {
-                time = samplingTimes[currentTimeIndex+1];
+                time = samplingTimes.get(currentTimeIndex+1);
             } else { // there are more than 1 active node, can coalesce
 
                 // if there is valid pair, draw time
@@ -365,8 +413,8 @@ public class ExactMethodV2 {
 
                     // if time too large, go to next sampling time
                     if ((toBeAddedLeftSize + toBeAddedRightSize) > 0 &&
-                            time > samplingTimes[currentTimeIndex+1]) {
-                        time = samplingTimes[currentTimeIndex+1];
+                            time > samplingTimes.get(currentTimeIndex+1)) {
+                        time = samplingTimes.get(currentTimeIndex+1);
                     }
                     else {
                         // At least one group has >= 2 active lineages that can coalesce
@@ -389,7 +437,7 @@ public class ExactMethodV2 {
                     }
                 } else { // no valid pari, go to next time, p_nc
                     // the probability that no coalescent before next sample, exp( -tau * (k choose 2) / theta )
-                    double nextTime = samplingTimes[currentTimeIndex+1];
+                    double nextTime = samplingTimes.get(currentTimeIndex+1);
                     double tau = nextTime - time;
                     double noCoalescentProb = Math.exp(-tau * ((double) totalPairCount / theta));
                     totalWeight *= noCoalescentProb;
@@ -401,11 +449,11 @@ public class ExactMethodV2 {
             currentTimeIndex += 1;
 
             // At the next sampling time, add nodes to activeNodes
-            while ((toBeAddedLeftSize + toBeAddedRightSize) > 0 && samplingTimes[currentTimeIndex] == time) {
-                activeLeftSize += sampledLeftAtTime[currentTimeIndex];
-                activeRightSize += sampledRightAtTime[currentTimeIndex];
-                toBeAddedLeftSize -= sampledLeftAtTime[currentTimeIndex];
-                toBeAddedRightSize -= sampledRightAtTime[currentTimeIndex];
+            while ((toBeAddedLeftSize + toBeAddedRightSize) > 0 && samplingTimes.get(currentTimeIndex) == time) {
+//                activeLeftSize += sampledLeftAtTime[currentTimeIndex];
+//                activeRightSize += sampledRightAtTime[currentTimeIndex];
+//                toBeAddedLeftSize -= sampledLeftAtTime[currentTimeIndex];
+//                toBeAddedRightSize -= sampledRightAtTime[currentTimeIndex];
             }
         }
 
@@ -437,8 +485,7 @@ public class ExactMethodV2 {
         List<Double> timesLeftList = new ArrayList<>(Arrays.asList(0.0, 0.0));
         List<Double> timesRightList = new ArrayList<>(Arrays.asList(1.0));
 
-        System.out.println("hi");
-        System.out.println(testCase.getProbability(theta, timesLeft, timesRight));
+        // System.out.println(testCase.getProbability(theta, timesLeft, timesRight));
         System.out.println(testCase.sample(theta, timesLeftList, timesRightList));
 
     }
