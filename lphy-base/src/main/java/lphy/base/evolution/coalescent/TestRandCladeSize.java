@@ -25,37 +25,40 @@ public class TestRandCladeSize {
     public static void main(String[] args) throws IOException {
 
         Random random = new Random();
+        int seed = 10;
+        random.setSeed(seed);
 
         Value<Number> thetaSim = new Value<>("theta", 1);
         double thetaExact = ValueUtils.doubleValue(thetaSim);
-        int numOfTaxa = 20;
+        int numOfTaxa = 30;
 
-        int cladeReps = 100;
-        int simRepsExp = 21;
+        int cladeReps = 1;
+        int simRepsExp = 5;
 
         double[][] exactResults = new double[simRepsExp][cladeReps];
         double[][] simResults = new double[simRepsExp][cladeReps];
 
-        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_error_time_20taxa.csv");
+        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_fixed_clade_30taxa.csv");
         FileWriter fileWriter = new FileWriter(outputFile);
         PrintWriter writer = new PrintWriter(fileWriter);
 
-        // header: numOfTaxa, simReps, exactResult, simResult, error, simTime
+        // header
         String separator = ",";
         StringBuilder sb = new StringBuilder();
         sb.append("numOfTaxa").append(separator);
+        sb.append("seed").append(separator);
         sb.append("simReps").append(separator);
+        sb.append("cladeReps").append(separator);
         sb.append("exactResult").append(separator);
         sb.append("simResult").append(separator);
-        sb.append("error").append(separator);
-        sb.append("exactTime").append(separator);
-        sb.append("simTime").append(separator);
+//        sb.append("error").append(separator);
+//        sb.append("simTime").append(separator);
         writer.println(sb.toString());
 
         // reps for simulation progressively increase [8, 16, 32, 64, 128, 256, 512]
         for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
-            int simReps = (int) Math.pow(2, expNum);
-            //int simReps = 10000;
+//            int simReps = (int) Math.pow(2, expNum);
+            int simReps = (int) Math.pow(2, 16);
 
             for (int cReps = 0; cReps < cladeReps; cReps++) { // for different clade splits
 
@@ -88,10 +91,10 @@ public class TestRandCladeSize {
                 Taxon[] taxaArray = taxaList.toArray(new Taxon[]{});
 
 
-                long startingExact = System.currentTimeMillis();
+//                long startingExact = System.currentTimeMillis();
                 exactResults[expNum][cReps] = computeProbability(thetaExact, leftCladeList, rightCladeList, tauList);
-                long endingExact = System.currentTimeMillis();
-                long timeExact = (endingExact - startingExact);
+//                long endingExact = System.currentTimeMillis();
+//                long timeExact = (endingExact - startingExact);
 
 //                System.out.println(" ");
 //                System.out.println("Exact clade split prob = " + exactResults[expNum][cReps]);
@@ -109,35 +112,38 @@ public class TestRandCladeSize {
                     SerialCoalClade coalescent = new SerialCoalClade(thetaSim, nSim, taxaSim, null, leftCladeSim, rightCladeSim);
                     RandomVariable<TimeTree> sample = coalescent.sample();
                     weights[i] = sample.value().getRoot().getWeight();
+                    System.out.println("Exact result = " + exactResults[expNum][cReps] + ",  Simulation result = " + weights[i]);
+
+                    sb = new StringBuilder();
+                    sb.append(numOfTaxa).append(separator);
+                    sb.append(seed).append(separator);
+                    sb.append(simReps).append(separator);
+                    sb.append(cladeReps).append(separator);
+                    sb.append(exactResults[expNum][cReps]).append(separator);
+                    sb.append(weights[i]);
+//                    sb.append(err).append(separator);
+//                    sb.append(timeSim).append(separator);
+                    writer.println(sb.toString());
+                    writer.flush();
                 }
                 Mean mean = new Mean();
                 simResults[expNum][cReps] = mean.evaluate(weights);
 
                 long endingSim = System.currentTimeMillis();
+                long timeSim = (endingSim - startingSim);
 
-                StandardDeviation standardDeviation = new StandardDeviation();
-                double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
+//                StandardDeviation standardDeviation = new StandardDeviation();
+//                double stderr = standardDeviation.evaluate(weights) / Math.sqrt(simReps);
 
 //                System.out.println("num of sim = " + simReps);
 //                System.out.println("Simulation mean weight = " + simResults[expNum][cReps] + " +/- " + stderr);
 
-                long timeSim = (endingSim - startingSim);
-//                System.out.println("Time took: " + timeSim + " ms");
+//                System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
+//                System.out.println("Exact result = " + exactResults[expNum][cReps] + ",  Simulation result = " + simResults[expNum][cReps]);
 
-                double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
+//                double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
 //                System.out.println("error = " + err + " %");
 
-                // numOfTaxa, simReps, exactResult, simResult, error, simTime
-                sb = new StringBuilder();
-                sb.append(numOfTaxa).append(separator);
-                sb.append(simReps).append(separator);
-                sb.append(exactResults[expNum][cReps]).append(separator);
-                sb.append(simResults[expNum][cReps]).append(separator);
-                sb.append(err).append(separator);
-                sb.append(timeExact).append(separator);
-                sb.append(timeSim).append(separator);
-                writer.println(sb.toString());
-                writer.flush();
 
             }
         }

@@ -1,7 +1,5 @@
 package lphy.base.evolution.coalescent;
 
-import lphy.base.evolution.tree.TimeTreeNode;
-import lphy.core.model.RandomVariable;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import java.util.*;
@@ -12,22 +10,6 @@ public class SerialCoalCladeSimplified {
     // double theta, double[] timesLeft, double[] timesRight
 
     Random random = new Random();
-
-    static int binomialCoefficientThreshold = 50;
-    private static long[][] combination;
-
-    public SerialCoalCladeSimplified(int n) {
-        setUpCache(n);
-    }
-
-    private void setUpCache(int n) {
-        combination = new long[binomialCoefficientThreshold + 1][binomialCoefficientThreshold + 1];
-        for (int i = 0; i <= binomialCoefficientThreshold; i++) {
-            for (int j = 0; j <= i; j++) {
-                combination[i][j] = CombinatoricsUtils.binomialCoefficient(i, j);
-            }
-        }
-    }
 
     public double sample(double theta, List<Double> timesLeft, List<Double> timesRight) {
 
@@ -168,7 +150,7 @@ public class SerialCoalCladeSimplified {
             }
         }
 
-        totalWeight *= contempFormula((activeLeftSize + activeRightSize), activeLeftSize);
+//        totalWeight *= contempFormula((activeLeftSize + activeRightSize), activeLeftSize);
 
         return totalWeight;
     }
@@ -185,33 +167,33 @@ public class SerialCoalCladeSimplified {
         parentClade.add(time); // use the coalescent time to represent the parent
     }
 
-    public static double contempFormula(int parentSize, int leftSize) {
-        return (2.0 / (parentSize - 1)) * (1.0 / binomialCoeff(parentSize, leftSize));
-    }
+//    public static double contempFormula(int parentSize, int leftSize) {
+//        return (2.0 / (parentSize - 1)) * (1.0 / binomialCoeff(parentSize, leftSize));
+//    }
 
-    public static long binomialCoeff(int n, int k) {
-        if (n < binomialCoefficientThreshold) {
-            return combination[n][k];
-        } else {
-            long x = 1;
-            for (int i = 0; i < (k - 1); i++) {
-                x *= (n - i) / (k - i);
-            }
-            return x;
-        }
-    }
+//    public static long binomialCoeff(int n, int k) {
+//        if (n < binomialCoefficientThreshold) {
+//            return combination[n][k];
+//        } else {
+//            long x = 1;
+//            for (int i = 0; i < (k - 1); i++) {
+//                x *= (n - i) / (k - i);
+//            }
+//            return x;
+//        }
+//    }
 
     public static void main(String[] args) { // ------------------------------------------------------------------------
 
         int parentCladeSize = 3;
-        SerialCoalCladeSimplified testCase = new SerialCoalCladeSimplified(parentCladeSize);
+//        SerialCoalCladeSimplified testCase = new SerialCoalCladeSimplified(parentCladeSize);
 
         double theta = 1.0;
 
         List<Double> timesLeft = new ArrayList<>(Arrays.asList(0.0, 0.0));
         List<Double> timesRight = new ArrayList<>(Arrays.asList(1.0));
 
-        System.out.println(testCase.sample(theta, timesLeft, timesRight));
+//        System.out.println(testCase.sample(theta, timesLeft, timesRight));
     }
 
 }

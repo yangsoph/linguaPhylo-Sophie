@@ -7,7 +7,6 @@ import lphy.core.model.RandomVariable;
 import lphy.core.model.Value;
 import lphy.core.model.ValueUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -18,40 +17,41 @@ import java.util.Random;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import static lphy.base.evolution.coalescent.ExactMethod.computeProbability;
-
-public class TestSimpleCase {
+public class TestCorrectInputFormat {
 
     public static void main(String[] args) throws IOException {
 
         Random random = new Random();
+        int seed = 879;
+        random.setSeed(seed);
 
         Value<Number> thetaSim = new Value<>("theta", 1);
         double thetaExact = ValueUtils.doubleValue(thetaSim);
 
-        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_40taxa.csv");
+        File outputFile = new File("/Users/zyan598/Documents/GitHub/CCD_prior/testing/output_fixed_clade_20taxa_879.csv");
         FileWriter fileWriter = new FileWriter(outputFile);
         PrintWriter writer = new PrintWriter(fileWriter);
 
-        // header: numOfTaxa, simReps, exactResult, simResult, error, simTime
+        // header
         String separator = ",";
         StringBuilder sb = new StringBuilder();
         sb.append("numOfTaxa").append(separator);
         sb.append("simReps").append(separator);
         sb.append("exactResult").append(separator);
         sb.append("simResult").append(separator);
-        sb.append("error").append(separator);
-        sb.append("simTime").append(separator);
+//        sb.append("error").append(separator);
+//        sb.append("simTime").append(separator);
         writer.println(sb.toString());
 
-        int numOfTaxa = 40;
-        int simRepsExp = 19;
-        int cladeReps = 100;
+        int numOfTaxa = 20;
+        int simRepsExp = 5;
+        int cladeReps = 1;
         double[][] exactResults = new double[simRepsExp][cladeReps];
         double[][] simResults = new double[simRepsExp][cladeReps];
 
         for (int expNum = 4; expNum < simRepsExp; expNum++) { // for different number of simulations
-            int simReps = (int) Math.pow(2, expNum);
+//            int simReps = (int) Math.pow(2, expNum);
+            int simReps = (int) Math.pow(2, 14);
 
             for (int cReps = 0; cReps < cladeReps; cReps++) { // for different clade splits
 
@@ -108,6 +108,17 @@ public class TestSimpleCase {
                     SerialCoalClade coalescent = new SerialCoalClade(thetaSim, nSim, taxaSim, null, leftCladeSim, rightCladeSim);
                     RandomVariable<TimeTree> sample = coalescent.sample();
                     weights[i] = sample.value().getRoot().getWeight();
+                    System.out.println("Exact result = " + exactResults[expNum][cReps] + ",  Simulation result = " + weights[i]);
+
+                    sb = new StringBuilder();
+                    sb.append(numOfTaxa).append(separator);
+                    sb.append(simReps).append(separator);
+                    sb.append(exactResults[expNum][cReps]).append(separator);
+                    sb.append(weights[i]);
+//                    sb.append(err).append(separator);
+//                    sb.append(timeSim).append(separator);
+                    writer.println(sb.toString());
+                    writer.flush();
                 }
                 Mean mean = new Mean();
                 simResults[expNum][cReps] = mean.evaluate(weights);
@@ -121,18 +132,18 @@ public class TestSimpleCase {
 
                 double err = ((simResults[expNum][cReps] - exactResults[expNum][cReps]) / exactResults[expNum][cReps]) * 100;
 
-                System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
+//                System.out.println("Num of taxa = " + numOfTaxa + ", Num of sim = " + simReps + ", sim took: " + timeSim + " ms");
 
-//                 numOfTaxa, simReps, exactResult, simResult, error, simTime
-                sb = new StringBuilder();
-                sb.append(numOfTaxa).append(separator);
-                sb.append(simReps).append(separator);
-                sb.append(exactResults[expNum][cReps]).append(separator);
-                sb.append(simResults[expNum][cReps]).append(separator);
-                sb.append(err).append(separator);
-                sb.append(timeSim).append(separator);
-                writer.println(sb.toString());
-                writer.flush();
+////                 numOfTaxa, simReps, exactResult, simResult, error, simTime
+//                sb = new StringBuilder();
+//                sb.append(numOfTaxa).append(separator);
+//                sb.append(simReps).append(separator);
+//                sb.append(exactResults[expNum][cReps]).append(separator);
+//                sb.append(simResults[expNum][cReps]).append(separator);
+//                sb.append(err).append(separator);
+//                sb.append(timeSim).append(separator);
+//                writer.println(sb.toString());
+//                writer.flush();
 
             }
         }
