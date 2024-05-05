@@ -35,7 +35,7 @@ public class ExactMethod {
 
          */
 
-        // System.out.println(computeProbability(theta, leftClade, rightClade, tau));
+         System.out.println(computeProbability(theta, leftClade, rightClade, tau));
 
         /*
         long startTime = System.currentTimeMillis();
